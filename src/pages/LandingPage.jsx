@@ -15,6 +15,8 @@ function AnimatedCounter({ target, duration = 2000 }) {
   const ref = useRef(null);
   const done = useRef(false);
   useEffect(() => {
+    if (target === 0) return;
+    done.current = false;
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting && !done.current) {
         done.current = true;

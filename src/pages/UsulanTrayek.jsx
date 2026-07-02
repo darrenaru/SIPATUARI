@@ -5,6 +5,7 @@ import DataTable from '../components/ui/DataTable';
 import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
+import Select from '../components/ui/Select';
 import DocumentList from '../components/ui/DocumentList';
 import UploadButton from '../components/ui/UploadButton';
 import TrayekMap from '../components/maps/TrayekMap';
@@ -114,7 +115,7 @@ export default function UsulanTrayek() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Usulan Trayek</h1>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -166,11 +167,13 @@ export default function UsulanTrayek() {
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Kabupaten Pengusul</label>
-              <select value={form.kabupaten} onChange={(e) => setForm({ ...form, kabupaten: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                <option value="">Pilih kabupaten...</option>
-                {kabupatenOptions.map((k) => <option key={k} value={k}>{k}</option>)}
-              </select>
+              <Select
+                label="Kabupaten Pengusul"
+                value={form.kabupaten}
+                onChange={(e) => setForm({ ...form, kabupaten: e.target.value })}
+                placeholder="Pilih kabupaten..."
+                options={kabupatenOptions}
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Kode Trayek</label>

@@ -80,7 +80,7 @@ export default function Armada() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Armada</h1>
           <p className="text-sm text-slate-500 mt-0.5">Data kapal perintis: nama, operator, dan status kapal.</p>
@@ -146,14 +146,16 @@ export default function Armada() {
               <input type="text" placeholder="KM. ..." value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Operator</label>
-              <select value={form.operator_id} onChange={(e) => setForm({ ...form, operator_id: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                <option value="">— Belum ditentukan —</option>
-                {operatorList.map((op) => <option key={op.id} value={op.id}>{op.instansi || op.nama}</option>)}
-              </select>
+              <Select
+                label="Operator"
+                value={form.operator_id}
+                onChange={(e) => setForm({ ...form, operator_id: e.target.value })}
+                placeholder="— Belum ditentukan —"
+                options={operatorList.map((op) => ({ value: op.id, label: op.instansi || op.nama }))}
+              />
               <p className="text-xs text-slate-400 mt-1">Operator dapat diubah kapan saja apabila penugasan kapal berganti.</p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Kapasitas Penumpang</label>
                 <input type="number" min="0" placeholder="0" value={form.kapasitas_penumpang} onChange={(e) => setForm({ ...form, kapasitas_penumpang: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
@@ -163,16 +165,19 @@ export default function Armada() {
                 <input type="number" min="0" placeholder="0" value={form.kapasitas_muatan} onChange={(e) => setForm({ ...form, kapasitas_muatan: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Tahun Buat</label>
                 <input type="number" min="0" placeholder="2020" value={form.tahun_buat} onChange={(e) => setForm({ ...form, tahun_buat: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
-                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                  <option>Beroperasi</option><option>Docking</option>
-                </select>
+                <Select
+                  label="Status"
+                  clearable={false}
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  options={['Beroperasi', 'Docking']}
+                />
               </div>
             </div>
           </div>
@@ -191,8 +196,8 @@ export default function Armada() {
                 <Badge variant={detailModal.status === 'Beroperasi' ? 'beroperasi' : 'docking'}>{detailModal.status}</Badge>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2"><p className="text-xs text-slate-400">Operator</p><p className="font-semibold text-navy-900">{detailModal.operator?.instansi || '—'}</p></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2"><p className="text-xs text-slate-400">Operator</p><p className="font-semibold text-navy-900">{detailModal.operator?.instansi || '—'}</p></div>
               <div><p className="text-xs text-slate-400">Tipe</p><p className="font-semibold text-navy-900">{detailModal.tipe}</p></div>
               <div><p className="text-xs text-slate-400">Tahun Buat</p><p className="font-semibold text-navy-900">{detailModal.tahun_buat}</p></div>
               <div><p className="text-xs text-slate-400">Kapasitas Penumpang</p><p className="font-semibold text-navy-900">{detailModal.kapasitas_penumpang} orang</p></div>

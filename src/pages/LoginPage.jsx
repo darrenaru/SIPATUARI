@@ -5,6 +5,13 @@ import loginBg from '../assets/images/login-bg.png';
 import logoWhite from '../assets/logo/logo-white.png';
 import logoBlue from '../assets/logo/logo-blue.png';
 import { supabase } from '../lib/supabaseClient';
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery';
+
+function fmtNum(n) {
+  if (!n) return '0';
+  if (n >= 1000) return `${(n / 1000).toFixed(1).replace('.0', '')}K`;
+  return String(n);
+}
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -14,7 +21,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const invalidCredentialsMessage = lang === 'id' ? 'NIP atau kata sandi salah.' : 'Invalid NIP or password.';
+  const { data: stats } = useSupabaseQuery(() => supabase.rpc('get_landing_stats'), []);
+  const invalidCredentialsMessage = lang === 'id' ? 'Username atau kata sandi salah.' : 'Invalid username or password.';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,9 +71,9 @@ export default function LoginPage() {
           </p>
           <div className="mt-12 grid grid-cols-3 gap-4 max-w-sm mx-auto">
             {[
-              { val: '5', label: 'Kapal' },
-              { val: '12', label: 'Pelabuhan' },
-              { val: '4.7K', label: 'Penumpang' },
+              { val: fmtNum(stats?.kapal), label: 'Kapal' },
+              { val: fmtNum(stats?.pelabuhan), label: 'Pelabuhan' },
+              { val: fmtNum(stats?.penumpang_tahun), label: 'Penumpang' },
             ].map(s => (
               <div key={s.label} className="p-3 rounded-xl bg-white/8 border border-white/10">
                 <p className="text-xl font-bold text-white">{s.val}</p>
@@ -120,14 +128,14 @@ export default function LoginPage() {
             )}
             <div>
               <label htmlFor="nip" className="block text-sm font-medium text-slate-700 mb-1.5">
-                {lang === 'id' ? 'NIP / Email' : 'Employee ID / Email'}
+                {lang === 'id' ? 'Username / Email' : 'Username / Email'}
               </label>
               <input
                 id="nip"
                 type="text"
                 value={form.nip}
                 onChange={e => setForm({ ...form, nip: e.target.value })}
-                placeholder={lang === 'id' ? 'Masukkan NIP atau email' : 'Enter your ID or email'}
+                placeholder={lang === 'id' ? 'Masukkan username atau email' : 'Enter username or email'}
                 className="w-full px-4 py-3 bg-white border border-surface-200 rounded-xl text-sm text-navy-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
                 required
               />

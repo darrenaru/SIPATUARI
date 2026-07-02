@@ -1,7 +1,68 @@
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
+import { getLampiranUrl } from './storage';
 
 const TEMPLATE_URL = '/templates/fasilitas-pelabuhan-template.docx';
+
+const EMU_PER_PX = 9525;
+const MAX_IMAGE_WIDTH_PX = 560;
+const MAX_IMAGE_HEIGHT_PX = 320;
+
+// Word only reliably renders PNG/JPEG/GIF/BMP blips, so every upload (webp, avif, ...) is
+// normalized to PNG via canvas rather than trusting the original mime type.
+function loadAsPng(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth || 400;
+      canvas.height = img.naturalHeight || 300;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((pngBlob) => {
+        if (!pngBlob) { reject(new Error('Gagal mengonversi foto pelabuhan.')); return; }
+        pngBlob.arrayBuffer().then((arrayBuffer) => resolve({ arrayBuffer, width: canvas.width, height: canvas.height }));
+      }, 'image/png');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Gagal memuat foto pelabuhan.')); };
+    img.src = url;
+  });
+}
+
+async function buildFotoDrawingXml(paths, zip) {
+  if (!paths?.length) return '';
+  const rels = zip.files['word/_rels/document.xml.rels'].asText();
+  const usedIds = [...rels.matchAll(/Id="rId(\d+)"/g)].map((m) => Number(m[1]));
+  let nextRid = Math.max(0, ...usedIds) + 1;
+  let relsXml = rels;
+  const paragraphs = [];
+
+  for (const path of paths) {
+    const { url, error } = await getLampiranUrl(path);
+    if (error || !url) continue;
+    const res = await fetch(url);
+    if (!res.ok) continue;
+    const blob = await res.blob();
+    const { arrayBuffer, width, height } = await loadAsPng(blob);
+    const scale = Math.min(1, MAX_IMAGE_WIDTH_PX / width, MAX_IMAGE_HEIGHT_PX / height);
+    const cx = Math.round(width * scale * EMU_PER_PX);
+    const cy = Math.round(height * scale * EMU_PER_PX);
+
+    const rId = `rId${nextRid++}`;
+    const mediaName = `foto-pelabuhan-${paragraphs.length}.png`;
+    zip.file(`word/media/${mediaName}`, arrayBuffer);
+    relsXml = relsXml.replace('</Relationships>',
+      `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${mediaName}"/></Relationships>`);
+
+    const docPrId = 900000 + paragraphs.length;
+    const label = `Foto ${paragraphs.length + 1}`;
+    paragraphs.push(`<w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="${cx}" cy="${cy}"/><wp:effectExtent l="0" t="0" r="0" b="0"/><wp:docPr id="${docPrId}" name="${label}"/><wp:cNvGraphicFramePr><a:graphicFrameLocks xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" noChangeAspect="1"/></wp:cNvGraphicFramePr><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="0" name="${label}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r></w:p>`);
+  }
+
+  zip.file('word/_rels/document.xml.rels', relsXml);
+  return paragraphs.join('');
+}
 
 function buildData(pelabuhan, f) {
   const v = (val) => val ?? '';
@@ -156,8 +217,9 @@ export async function generateFasilitasDocx(pelabuhan, form) {
   if (!response.ok) throw new Error('Gagal memuat template laporan.');
   const arrayBuffer = await response.arrayBuffer();
   const zip = new PizZip(arrayBuffer);
+  const foto_drawing = await buildFotoDrawingXml(form.foto, zip);
   const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true, nullGetter: () => '' });
-  doc.render(buildData(pelabuhan, form));
+  doc.render({ ...buildData(pelabuhan, form), foto_drawing });
   return doc.getZip().generate({
     type: 'blob',
     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

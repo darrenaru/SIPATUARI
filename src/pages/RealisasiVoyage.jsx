@@ -56,7 +56,6 @@ function DataFields({ input, onChange }) {
 export default function RealisasiVoyage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [selectedPelabuhan, setSelectedPelabuhan] = useState([]);
   const [singgahModal, setSinggahModal] = useState(null);
   const [singgahInputs, setSinggahInputs] = useState({});
   const [confirmingSave, setConfirmingSave] = useState({});
@@ -79,8 +78,10 @@ export default function RealisasiVoyage() {
     order: { column: 'created_at', ascending: false },
   });
   const { rows: allKapalList } = useSupabaseTable('kapal', { order: { column: 'nama' } });
-  const { rows: trayekList } = useSupabaseTable('trayek', { order: { column: 'kode' } });
-  const { rows: pelabuhanList } = useSupabaseTable('pelabuhan', { order: { column: 'nama' } });
+  const { rows: allTrayekList } = useSupabaseTable('trayek', { select: '*, kapal:kapal_id(operator_id), trayek_singgah(pelabuhan_id, urutan, jarak, pelabuhan:pelabuhan_id(nama))', order: { column: 'kode' } });
+  const trayekList = effectiveOperatorId
+    ? allTrayekList.filter((t) => t.kapal?.operator_id === effectiveOperatorId)
+    : allTrayekList;
   const { rows: operatorList } = useSupabaseTable('profiles', { select: 'id, nama, instansi', eq: { role: 'operator' } });
   const operatorOptions = operatorList.map((op) => ({ value: op.id, label: op.instansi || op.nama }));
 
@@ -92,22 +93,35 @@ export default function RealisasiVoyage() {
     ? allVoyageList.filter((v) => v.kapal?.operator_id === effectiveOperatorId)
     : allVoyageList;
 
-  const togglePelabuhan = (pelabuhanId) => {
-    setSelectedPelabuhan((prev) =>
-      prev.includes(pelabuhanId) ? prev.filter((id) => id !== pelabuhanId) : [...prev, pelabuhanId]
-    );
-  };
-
   const resetModal = () => {
     setModalOpen(false);
     setForm(EMPTY_FORM);
-    setSelectedPelabuhan([]);
   };
 
   const handleSave = async () => {
+    if (!form.kapal_id || !form.trayek_id || !form.tgl_berangkat) {
+      toast('Kapal, trayek, dan tanggal berangkat wajib diisi.', 'error');
+      return;
+    }
+
+    // Cek konflik: kapal yang sama tidak boleh punya voyage aktif di periode yang sama
+    const { data: conflicts } = await supabase
+      .from('voyage')
+      .select('id, tgl_berangkat, tgl_tiba')
+      .eq('kapal_id', Number(form.kapal_id))
+      .lte('tgl_berangkat', form.tgl_tiba || '9999-12-31')
+      .or(`tgl_tiba.gte.${form.tgl_berangkat},tgl_tiba.is.null`);
+
+    if (conflicts && conflicts.length > 0) {
+      const c = conflicts[0];
+      const tgl = new Date(c.tgl_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+      toast(`Kapal ini sudah memiliki voyage pada periode tersebut (Voyage #${c.id}, berangkat ${tgl}).`, 'error');
+      return;
+    }
+
     const payload = {
-      kapal_id: form.kapal_id ? Number(form.kapal_id) : null,
-      trayek_id: form.trayek_id ? Number(form.trayek_id) : null,
+      kapal_id: Number(form.kapal_id),
+      trayek_id: Number(form.trayek_id),
       tgl_berangkat: form.tgl_berangkat || null,
       tgl_tiba: form.tgl_tiba || null,
       status: 'Berlayar',
@@ -115,8 +129,10 @@ export default function RealisasiVoyage() {
     const { data, error } = await insert(payload);
     if (error) { toast(error.message, 'error'); return; }
 
-    if (selectedPelabuhan.length > 0) {
-      const singgahRows = selectedPelabuhan.map((pelabuhan_id, idx) => ({ voyage_id: data[0].id, pelabuhan_id, urutan: idx + 1 }));
+    const selectedTrayek = trayekList.find((t) => t.id === Number(form.trayek_id));
+    const trayekSinggah = (selectedTrayek?.trayek_singgah || []).sort((a, b) => a.urutan - b.urutan);
+    if (trayekSinggah.length > 0) {
+      const singgahRows = trayekSinggah.map((s) => ({ voyage_id: data[0].id, pelabuhan_id: s.pelabuhan_id, urutan: s.urutan }));
       const { error: singgahError } = await supabase.from('voyage_singgah').insert(singgahRows);
       if (singgahError) { toast(singgahError.message, 'error'); return; }
     }
@@ -340,7 +356,7 @@ export default function RealisasiVoyage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Realisasi Voyage</h1>
           <p className="text-sm text-slate-500 mt-0.5">Input dan monitor realisasi pelayaran kapal perintis.</p>
@@ -427,23 +443,27 @@ export default function RealisasiVoyage() {
           footer={<><Button variant="ghost" onClick={resetModal}>Batal</Button><Button onClick={handleSave}>Simpan Voyage</Button></>}
         >
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Pilih Kapal</label>
-                <select value={form.kapal_id} onChange={(e) => setForm({ ...form, kapal_id: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                  <option value="">— Pilih Kapal —</option>
-                  {kapalList.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
-                </select>
+                <Select
+                  label="Pilih Kapal"
+                  value={form.kapal_id}
+                  onChange={(e) => setForm({ ...form, kapal_id: e.target.value })}
+                  placeholder="— Pilih Kapal —"
+                  options={kapalList.map(k => ({ value: k.id, label: k.nama }))}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Pilih Trayek</label>
-                <select value={form.trayek_id} onChange={(e) => setForm({ ...form, trayek_id: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
-                  <option value="">— Pilih Trayek —</option>
-                  {trayekList.map(t => <option key={t.id} value={t.id}>{t.kode} — {t.nama}</option>)}
-                </select>
+                <Select
+                  label="Pilih Trayek"
+                  value={form.trayek_id}
+                  onChange={(e) => setForm({ ...form, trayek_id: e.target.value })}
+                  placeholder="— Pilih Trayek —"
+                  options={trayekList.map(t => ({ value: t.id, label: `${t.kode} — ${t.nama}` }))}
+                />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Tanggal Keberangkatan</label>
                 <input type="date" value={form.tgl_berangkat} onChange={(e) => setForm({ ...form, tgl_berangkat: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
@@ -453,18 +473,38 @@ export default function RealisasiVoyage() {
                 <input type="date" value={form.tgl_tiba} onChange={(e) => setForm({ ...form, tgl_tiba: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" />
               </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Pelabuhan yang Disinggahi</label>
-              <div className="grid grid-cols-3 gap-2 p-3 bg-surface-50 rounded-lg border border-surface-200">
-                {pelabuhanList.filter(p => p.status === 'Aktif').map(p => (
-                  <label key={p.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-                    <input type="checkbox" checked={selectedPelabuhan.includes(p.id)} onChange={() => togglePelabuhan(p.id)} className="w-3.5 h-3.5 rounded border-surface-300 text-sea-600 focus:ring-cyan-500" />
-                    {p.nama.replace('Pelabuhan ', '')}
-                  </label>
-                ))}
-              </div>
-              <p className="text-xs text-slate-400 mt-1.5">Status setiap titik (disinggahi/dilewati) diperbarui kemudian lewat tombol <MapPin size={11} className="inline" /> "Update Persinggahan".</p>
-            </div>
+            {form.trayek_id && (() => {
+              const trayek = trayekList.find((t) => t.id === Number(form.trayek_id));
+              const stops = (trayek?.trayek_singgah || []).sort((a, b) => a.urutan - b.urutan);
+              return stops.length > 0 ? (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Rute Pelabuhan</label>
+                  <div className="flex items-center gap-1 flex-wrap p-3 bg-surface-50 rounded-lg border border-surface-200">
+                    {stops.map((s, i) => (
+                      <div key={s.pelabuhan_id} className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-xs text-navy-900 bg-white border border-surface-200 px-2 py-1 rounded-lg">
+                          <MapPin size={11} className="text-sea-500" />
+                          {s.pelabuhan?.nama?.replace('Pelabuhan ', '')}
+                        </span>
+                        {i < stops.length - 1 && (
+                          <span className="text-slate-400 text-xs mx-0.5">
+                            {stops[i + 1].jarak != null ? `— ${stops[i + 1].jarak} mil —` : '→'}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1.5">
+                    {stops.length} titik singgah
+                    {(() => {
+                      const total = stops.slice(1).reduce((sum, s) => sum + (Number(s.jarak) || 0), 0);
+                      return total > 0 ? ` · Total: ${total.toLocaleString('id-ID', { maximumFractionDigits: 2 })} mil laut` : '';
+                    })()}
+                    {' — '}status diperbarui lewat tombol <MapPin size={11} className="inline" /> "Update Persinggahan".
+                  </p>
+                </div>
+              ) : null;
+            })()}
           </div>
         </Modal>
       )}
@@ -575,9 +615,33 @@ export default function RealisasiVoyage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-between gap-2">
-                          {lastReq?.status === 'Ditolak' && <span className="text-xs text-danger-500">Permintaan terakhir ditolak</span>}
+                        <div className="flex justify-end">
                           <Button size="sm" variant="outline" onClick={() => toggleRequestForm(s.id, true)}>Ajukan Perubahan</Button>
+                        </div>
+                      )}
+
+                      {/* Riwayat permintaan yang sudah diproses */}
+                      {(s.voyage_singgah_request || []).some((r) => r.status !== 'Menunggu') && (
+                        <div className="pt-2 border-t border-surface-200 space-y-1.5">
+                          <p className="text-xs font-medium text-slate-400">Riwayat Permintaan</p>
+                          {[...(s.voyage_singgah_request || [])]
+                            .filter((r) => r.status !== 'Menunggu')
+                            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                            .map((r) => (
+                              <div key={r.id} className="flex items-center gap-2 text-xs">
+                                <span className="text-slate-400 flex-shrink-0">
+                                  {new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                </span>
+                                <span className="text-slate-600 flex-1 truncate">
+                                  {r.proposed_status === 'Dilewati'
+                                    ? `Dilewati (${r.proposed_alasan_dilewati || '-'})`
+                                    : `Naik ${r.proposed_naik ?? 0} / Turun ${r.proposed_turun ?? 0} · Muat ${r.proposed_muat ?? 0} / Bongkar ${r.proposed_bongkar ?? 0}`}
+                                </span>
+                                <span className={`flex-shrink-0 font-medium ${r.status === 'Diterima' ? 'text-success-600' : 'text-danger-500'}`}>
+                                  {r.status}
+                                </span>
+                              </div>
+                            ))}
                         </div>
                       )}
                     </>

@@ -218,8 +218,8 @@ export default function Topbar({ onMenuToggle }) {
                     >
                       <Icon size={14} className={`${iconColor} mt-0.5 flex-shrink-0`} />
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-navy-900">{n.judul}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{n.deskripsi}</p>
+                        <p className="text-sm font-semibold text-navy-900 truncate">{n.judul}</p>
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">{n.deskripsi}</p>
                         <p className="text-xs text-slate-400 mt-1">{relativeTime(n.ts)}</p>
                       </div>
                     </button>

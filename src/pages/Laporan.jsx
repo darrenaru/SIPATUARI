@@ -63,13 +63,13 @@ export default function Laporan() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Laporan</h1>
           <p className="text-sm text-slate-500 mt-0.5">Generate dan export laporan operasional angkutan laut perintis.</p>
         </div>
         {canExport && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" icon={Download} onClick={() => toast('Mengunduh laporan PDF...', 'info')}>PDF</Button>
             <Button variant="outline" icon={FileSpreadsheet} onClick={() => toast('Mengunduh laporan Excel...', 'info')}>Excel</Button>
             <Button variant="ghost" icon={Printer} onClick={() => toast('Menyiapkan cetak...', 'info')}>Cetak</Button>

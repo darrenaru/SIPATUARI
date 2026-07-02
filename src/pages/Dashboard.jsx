@@ -142,7 +142,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Selamat Datang, {roleLabel}</h1>
           <p className="text-sm text-slate-500 mt-0.5">Ringkasan operasional angkutan laut perintis hari ini.</p>
@@ -207,7 +207,7 @@ export default function Dashboard() {
       {/* Activity & Quick Info */}
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Activity Feed */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 min-w-0">
           <Card>
             <CardHeader><CardTitle>Aktivitas Terbaru</CardTitle></CardHeader>
             <div className="space-y-0 divide-y divide-surface-100">
@@ -221,7 +221,7 @@ export default function Dashboard() {
                       <Icon size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-navy-900">{a.aksi}</p>
+                      <p className="text-sm font-semibold text-navy-900 truncate">{a.aksi}</p>
                       <p className="text-xs text-slate-500 mt-0.5 truncate">{a.detail}</p>
                     </div>
                     <span className="text-xs text-slate-400 whitespace-nowrap flex-shrink-0">{relativeTime(a.ts)}</span>
@@ -237,14 +237,14 @@ export default function Dashboard() {
           <CardHeader><CardTitle>Status Kapal</CardTitle></CardHeader>
           <div className="space-y-3">
             {kapalList.map((k) => (
-              <div key={k.id} className="flex items-center justify-between p-3 rounded-lg bg-surface-50 hover:bg-surface-100 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-sea-500/10 flex items-center justify-center">
+              <div key={k.id} className="flex items-center justify-between gap-2 p-3 rounded-lg bg-surface-50 hover:bg-surface-100 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-sea-500/10 flex items-center justify-center flex-shrink-0">
                     <Ship size={14} className="text-sea-500" />
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-navy-900">{k.nama}</p>
-                    <p className="text-[10px] text-slate-400">{k.tipe}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-navy-900 truncate">{k.nama}</p>
+                    <p className="text-[10px] text-slate-400 truncate">{k.tipe}</p>
                   </div>
                 </div>
                 <Badge variant={k.status === 'Beroperasi' ? 'beroperasi' : 'docking'}>

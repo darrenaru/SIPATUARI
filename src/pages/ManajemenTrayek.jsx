@@ -41,6 +41,7 @@ export default function ManajemenTrayek() {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedPelabuhan, setSelectedPelabuhan] = useState([]);
+  const [jarakMap, setJarakMap] = useState({});
   const [filterOperator, setFilterOperator] = useState('');
   const toast = useToast();
 
@@ -51,7 +52,7 @@ export default function ManajemenTrayek() {
   const effectiveOperatorId = isOperator ? user?.id : (filterOperator || null);
 
   const { rows: allTrayekList, loading, insert, update, remove, refetch } = useSupabaseTable('trayek', {
-    select: '*, kapal:kapal_id(nama, operator_id, operator:operator_id(nama, instansi)), trayek_singgah(urutan, pelabuhan:pelabuhan_id(nama, kabupaten, fasilitas_pelabuhan(koordinat)))',
+    select: '*, kapal:kapal_id(nama, operator_id, operator:operator_id(nama, instansi)), trayek_singgah(urutan, jarak, pelabuhan:pelabuhan_id(nama, kabupaten, fasilitas_pelabuhan(koordinat)))',
     order: { column: 'created_at', ascending: false },
   });
   // Operator hanya boleh melihat trayek untuk kapal yang menjadi kewenangannya; admin/upp/pemkab bisa menyaring opsional
@@ -67,6 +68,7 @@ export default function ManajemenTrayek() {
     setEditingId(null);
     setForm(EMPTY_FORM);
     setSelectedPelabuhan([]);
+    setJarakMap({});
     setModalOpen(true);
   };
 
@@ -74,7 +76,14 @@ export default function ManajemenTrayek() {
     setEditingId(row.id);
     setForm({ kode: row.kode, nama: row.nama, kapal_id: row.kapal_id || '', status: row.status || 'Aktif' });
     const ordered = (row.trayek_singgah || []).slice().sort((a, b) => a.urutan - b.urutan);
-    setSelectedPelabuhan(ordered.map((s) => pelabuhanList.find((p) => p.nama === s.pelabuhan?.nama)?.id).filter(Boolean));
+    const ids = ordered.map((s) => pelabuhanList.find((p) => p.nama === s.pelabuhan?.nama)?.id).filter(Boolean);
+    setSelectedPelabuhan(ids);
+    const jarakInit = {};
+    ordered.forEach((s) => {
+      const pid = pelabuhanList.find((p) => p.nama === s.pelabuhan?.nama)?.id;
+      if (pid != null) jarakInit[pid] = s.jarak ?? '';
+    });
+    setJarakMap(jarakInit);
     setModalOpen(true);
   };
 
@@ -102,7 +111,7 @@ export default function ManajemenTrayek() {
     }
 
     if (selectedPelabuhan.length > 0) {
-      const singgahRows = selectedPelabuhan.map((pelabuhan_id, idx) => ({ trayek_id: trayekId, pelabuhan_id, urutan: idx + 1 }));
+      const singgahRows = selectedPelabuhan.map((pelabuhan_id, idx) => ({ trayek_id: trayekId, pelabuhan_id, urutan: idx + 1, jarak: jarakMap[pelabuhan_id] !== '' && jarakMap[pelabuhan_id] != null ? Number(jarakMap[pelabuhan_id]) : null }));
       const { error: singgahError } = await supabase.from('trayek_singgah').insert(singgahRows);
       if (singgahError) { toast(singgahError.message, 'error'); return; }
     }
@@ -141,7 +150,7 @@ export default function ManajemenTrayek() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Manajemen Trayek</h1>
           <p className="text-sm text-slate-500 mt-0.5">Kelola trayek angkutan laut perintis dan pelabuhan singgah.</p>
@@ -213,7 +222,7 @@ export default function ManajemenTrayek() {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">Pelabuhan Singgah</label>
-              <div className="grid grid-cols-3 gap-2 p-3 bg-surface-50 rounded-lg border border-surface-200 max-h-48 overflow-y-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-surface-50 rounded-lg border border-surface-200 max-h-48 overflow-y-auto">
                 {pelabuhanList.map(p => (
                   <label key={p.id} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
                     <input type="checkbox" checked={selectedPelabuhan.includes(p.id)} onChange={() => togglePelabuhan(p.id)} className="w-3.5 h-3.5 rounded border-surface-300 text-sea-600 focus:ring-cyan-500" />
@@ -221,20 +230,61 @@ export default function ManajemenTrayek() {
                   </label>
                 ))}
               </div>
+              {selectedPelabuhan.length > 1 && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-slate-500 mb-2">Jarak Antar Pelabuhan (mil laut)</p>
+                  <div className="flex flex-col gap-0">
+                    {selectedPelabuhan.map((id, idx) => {
+                      const p = pelabuhanList.find((x) => x.id === id);
+                      const nama = p?.nama?.replace('Pelabuhan ', '') || id;
+                      return (
+                        <div key={id}>
+                          <div className="flex items-center gap-2 py-1">
+                            <span className="w-2 h-2 rounded-full bg-sea-500 flex-shrink-0" />
+                            <span className="text-sm text-navy-900">{nama}</span>
+                          </div>
+                          {idx < selectedPelabuhan.length - 1 && (
+                            <div className="flex items-center gap-2 ml-1 py-0.5">
+                              <div className="w-px h-6 bg-surface-300 ml-0.5" />
+                              <input
+                                type="number" min="0" step="0.1" placeholder="jarak"
+                                value={jarakMap[selectedPelabuhan[idx + 1]] ?? ''}
+                                onChange={(e) => setJarakMap((prev) => ({ ...prev, [selectedPelabuhan[idx + 1]]: e.target.value }))}
+                                className="w-24 px-2 py-1 bg-white border border-surface-200 rounded text-xs focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                              />
+                              <span className="text-xs text-slate-400">mil</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-slate-400 mt-2">
+                    Total: <span className="font-semibold text-navy-900">
+                      {selectedPelabuhan.slice(1).reduce((sum, id) => sum + (Number(jarakMap[id]) || 0), 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })}
+                    </span> mil laut
+                  </p>
+                </div>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Kapal</label>
-                <select value={form.kapal_id} onChange={(e) => setForm({ ...form, kapal_id: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors">
-                  <option value="">— Pilih Kapal —</option>
-                  {kapalList.map((k) => <option key={k.id} value={k.id}>{k.nama}{k.operator?.instansi ? ` — ${k.operator.instansi}` : ''}</option>)}
-                </select>
+                <Select
+                  label="Kapal"
+                  value={form.kapal_id}
+                  onChange={(e) => setForm({ ...form, kapal_id: e.target.value })}
+                  placeholder="— Pilih Kapal —"
+                  options={kapalList.map((k) => ({ value: k.id, label: `${k.nama}${k.operator?.instansi ? ` — ${k.operator.instansi}` : ''}` }))}
+                />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Status</label>
-                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3.5 py-2.5 bg-white border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-colors">
-                  <option>Aktif</option><option>Nonaktif</option>
-                </select>
+                <Select
+                  label="Status"
+                  clearable={false}
+                  value={form.status}
+                  onChange={(e) => setForm({ ...form, status: e.target.value })}
+                  options={['Aktif', 'Nonaktif']}
+                />
               </div>
             </div>
           </div>
@@ -245,24 +295,35 @@ export default function ManajemenTrayek() {
       <Modal isOpen={!!detailModal} onClose={() => setDetailModal(null)} title={`Detail Trayek ${detailModal?.kode || ''}`} size="lg">
         {detailModal && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><p className="text-xs text-slate-400">Kode</p><p className="font-semibold text-navy-900 font-mono">{detailModal.kode}</p></div>
               <div><p className="text-xs text-slate-400">Status</p><Badge variant={detailModal.status === 'Aktif' ? 'aktif' : 'nonaktif'}>{detailModal.status}</Badge></div>
-              <div className="col-span-2"><p className="text-xs text-slate-400">Operator</p><p className="font-semibold text-navy-900">{detailModal.kapal?.operator?.instansi || '—'}</p></div>
+              <div className="sm:col-span-2"><p className="text-xs text-slate-400">Operator</p><p className="font-semibold text-navy-900">{detailModal.kapal?.operator?.instansi || '—'}</p></div>
             </div>
             <div><p className="text-xs text-slate-400 mb-2">Kapal</p><p className="font-semibold text-navy-900">{detailModal.kapal?.nama}</p></div>
             <div>
               <p className="text-xs text-slate-400 mb-2">Rute Pelabuhan</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                {singgahNames(detailModal).map((p, i) => (
-                  <div key={i} className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-wrap">
+                {[...(detailModal.trayek_singgah || [])].sort((a, b) => a.urutan - b.urutan).map((s, i, arr) => (
+                  <div key={i} className="flex items-center gap-1">
                     <span className="flex items-center gap-1 text-sm text-navy-900 bg-surface-50 px-2.5 py-1 rounded-lg">
-                      <MapPin size={12} className="text-sea-500" /> {p}
+                      <MapPin size={12} className="text-sea-500" /> {s.pelabuhan?.nama?.replace('Pelabuhan ', '')}
                     </span>
-                    {i < singgahNames(detailModal).length - 1 && <span className="text-slate-300">→</span>}
+                    {i < arr.length - 1 && (
+                      <span className="flex items-center gap-1 text-slate-400 text-xs mx-1">
+                        —{arr[i + 1].jarak != null ? ` ${arr[i + 1].jarak} mil ` : ' '}—
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
+              {(() => {
+                const stops = [...(detailModal.trayek_singgah || [])].sort((a, b) => a.urutan - b.urutan);
+                const total = stops.slice(1).reduce((sum, s) => sum + (Number(s.jarak) || 0), 0);
+                return total > 0 ? (
+                  <p className="text-xs text-slate-400 mt-1.5">Total jarak: <span className="font-semibold text-navy-900">{total.toLocaleString('id-ID', { maximumFractionDigits: 2 })} mil laut</span></p>
+                ) : null;
+              })()}
             </div>
             <div>
               <p className="text-xs text-slate-400 mb-2">Peta Jaringan Trayek</p>

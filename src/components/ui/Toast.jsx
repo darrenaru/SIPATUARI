@@ -37,7 +37,7 @@ function Toast({ id, message, type = 'info', onClose }) {
         borderLeft: `4px solid ${color.border}`,
         animation: isExiting ? 'toastOut 0.3s ease-in forwards' : 'toastIn 0.3s ease-out forwards',
       }}
-      className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg min-w-[320px] max-w-[420px]"
+      className="flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg w-full sm:w-auto sm:min-w-[320px] sm:max-w-[420px]"
     >
       <Icon size={20} style={{ color: color.icon, flexShrink: 0 }} />
       <p className="flex-1 text-sm font-medium" style={{ color: color.text }}>{message}</p>
@@ -66,7 +66,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={addToast}>
       {children}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2">
+      <div className="fixed top-4 left-4 right-4 sm:left-auto z-[9999] flex flex-col gap-2">
         {toasts.map(toast => (
           <Toast key={toast.id} {...toast} onClose={removeToast} />
         ))}

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Users, UserPlus, UserMinus, Filter } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { Users, UserPlus, UserMinus, Filter, Download } from 'lucide-react';
 import Card from '../components/ui/Card';
 import DataTable from '../components/ui/DataTable';
 import StatsCard from '../components/ui/StatsCard';
@@ -62,6 +63,22 @@ export default function DataPenumpang() {
     },
   ];
 
+  const exportExcel = () => {
+    const rows = filtered.map((row) => ({
+      Voyage: row.voyage?.trayek?.kode ? `${row.voyage.trayek.kode} (#${row.voyage_id})` : `#${row.voyage_id}`,
+      Urutan: row.urutan,
+      Pelabuhan: row.pelabuhan?.nama?.replace('Pelabuhan ', '') || '-',
+      Status: row.status,
+      Naik: row.penumpang_data?.naik || 0,
+      Turun: row.penumpang_data?.turun || 0,
+      Selisih: (row.penumpang_data?.naik || 0) - (row.penumpang_data?.turun || 0),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data Penumpang');
+    XLSX.writeFile(wb, 'data-penumpang.xlsx');
+  };
+
   const voyageOptions = voyageList.map(v => ({
     value: String(v.id),
     label: `${v.trayek?.kode || '—'} — ${v.kapal?.nama || '—'} (${new Date(v.tgl_berangkat).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })})`
@@ -69,9 +86,14 @@ export default function DataPenumpang() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Data Penumpang</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Rekap data penumpang naik dan turun per titik singgah.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-navy-900 font-[var(--font-heading)]">Data Penumpang</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Rekap data penumpang naik dan turun per titik singgah.</p>
+        </div>
+        <button onClick={exportExcel} className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-success-500/10 text-success-700 hover:bg-success-500/20 text-sm font-medium transition-colors cursor-pointer">
+          <Download size={15} /> Export Excel
+        </button>
       </div>
 
       {/* Stats */}

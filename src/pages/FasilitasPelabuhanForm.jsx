@@ -354,7 +354,7 @@ export default function FasilitasPelabuhanForm() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/dashboard/fasilitas-pelabuhan')} className="p-2 rounded-lg text-slate-400 hover:text-sea-600 hover:bg-sea-500/10 transition-colors cursor-pointer">
             <ArrowLeft size={18} />
@@ -364,7 +364,7 @@ export default function FasilitasPelabuhanForm() {
             <p className="text-sm text-slate-500 mt-0.5">{pelabuhan.kabupaten} &middot; {pelabuhan.koordinat}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" icon={Download} onClick={handleDownloadReport}>Unduh Laporan (.docx)</Button>
           {canEdit && (
             <Button onClick={handleSave}>Simpan Perubahan</Button>
@@ -373,17 +373,17 @@ export default function FasilitasPelabuhanForm() {
       </div>
 
       <Section number={1} title="Data Umum & Lokasi" defaultOpen>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field label="Kode Pelabuhan" value={f.kode_pelabuhan} onChange={(v) => set('kode_pelabuhan', v)} canEdit={canEdit} />
           <Field label="Nama Pelabuhan" value={pelabuhan.nama} canEdit={false} />
           <Field label="Kabupaten/Kota" value={f.kabupaten_kota} onChange={(v) => set('kabupaten_kota', v)} canEdit={canEdit} />
-          <Field label="Alamat" value={f.alamat} onChange={(v) => set('alamat', v)} canEdit={canEdit} className="col-span-2" />
+          <Field label="Alamat" value={f.alamat} onChange={(v) => set('alamat', v)} canEdit={canEdit} className="sm:col-span-2" />
           <Field label="Kode Pos" value={f.kode_pos} onChange={(v) => set('kode_pos', v)} canEdit={canEdit} />
           <Field label="Provinsi" value={f.provinsi} onChange={(v) => set('provinsi', v)} canEdit={canEdit} />
           <Field label="Telepon" value={f.telepon} onChange={(v) => set('telepon', v)} canEdit={canEdit} />
           <Field label="Fax" value={f.fax} onChange={(v) => set('fax', v)} canEdit={canEdit} />
           <Field label="Telex" value={f.telex} onChange={(v) => set('telex', v)} canEdit={canEdit} />
-          <Field label="Pengelola Pelabuhan" value={f.pengelola} onChange={(v) => set('pengelola', v)} canEdit={canEdit} className="col-span-2" />
+          <Field label="Pengelola Pelabuhan" value={f.pengelola} onChange={(v) => set('pengelola', v)} canEdit={canEdit} className="sm:col-span-2" />
           <Field label="Alamat Pengelola" value={f.alamat_pengelola} onChange={(v) => set('alamat_pengelola', v)} canEdit={canEdit} />
           <Field label="Koordinat LU/LS" value={f.koordinat?.lu} onChange={(v) => set('koordinat.lu', v)} canEdit={canEdit} />
           <Field label="Koordinat BT" value={f.koordinat?.bt} onChange={(v) => set('koordinat.bt', v)} canEdit={canEdit} />
@@ -418,7 +418,7 @@ export default function FasilitasPelabuhanForm() {
       </Section>
 
       <Section number={3} title="Riwayat & Kondisi">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field label="Tahun Dibangun" value={f.tahun_dibangun} onChange={(v) => set('tahun_dibangun', v)} canEdit={canEdit} />
           <Field label="Tahun Selesai Dibangun" value={f.tahun_selesai_dibangun} onChange={(v) => set('tahun_selesai_dibangun', v)} canEdit={canEdit} />
           <Field label="Tahun Operasi Ditutup" value={f.tahun_operasi_ditutup} onChange={(v) => set('tahun_operasi_ditutup', v)} canEdit={canEdit} />
@@ -429,7 +429,7 @@ export default function FasilitasPelabuhanForm() {
         </div>
         <div>
           <CardTitle className="text-sm mb-2">Alur Masuk Pelabuhan</CardTitle>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Panjang" value={f.alur_masuk?.panjang} onChange={(v) => set('alur_masuk.panjang', v)} canEdit={canEdit} />
             <Field label="Lebar" value={f.alur_masuk?.lebar} onChange={(v) => set('alur_masuk.lebar', v)} canEdit={canEdit} />
             <Field label="Kedalaman" value={f.alur_masuk?.kedalaman} onChange={(v) => set('alur_masuk.kedalaman', v)} canEdit={canEdit} />
@@ -440,7 +440,7 @@ export default function FasilitasPelabuhanForm() {
       <Section number={4} title="Kolam Pelabuhan & Pemanduan">
         <div>
           <CardTitle className="text-sm mb-2">Kolam Pelabuhan</CardTitle>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Field label="Luas" value={f.kolam_pelabuhan?.luas} onChange={(v) => set('kolam_pelabuhan.luas', v)} canEdit={canEdit} />
             <Field label="Kedalaman Min" value={f.kolam_pelabuhan?.kedalamanMin} onChange={(v) => set('kolam_pelabuhan.kedalamanMin', v)} canEdit={canEdit} />
             <Field label="Kedalaman Maks" value={f.kolam_pelabuhan?.kedalamanMaks} onChange={(v) => set('kolam_pelabuhan.kedalamanMaks', v)} canEdit={canEdit} />
@@ -450,7 +450,7 @@ export default function FasilitasPelabuhanForm() {
           <label className="block text-xs text-slate-400 mb-1.5">Status Pemanduan</label>
           <RadioGroup name="statusPemanduan" options={STATUS_PEMANDUAN_OPTIONS} value={f.status_pemanduan} onChange={(v) => set('status_pemanduan', v)} canEdit={canEdit} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field label="Stasiun Radio Pantai" value={f.stasiun_radio_pantai} onChange={(v) => set('stasiun_radio_pantai', v)} canEdit={canEdit} />
           <Field label="Koordinat Area Lego Jangkar" value={f.koordinat_lego_jangkar} onChange={(v) => set('koordinat_lego_jangkar', v)} canEdit={canEdit} />
           <Field label="Jumlah Petugas Port State Control" value={f.jumlah_petugas_psc} onChange={(v) => set('jumlah_petugas_psc', v)} suffix="Orang" canEdit={canEdit} />
@@ -458,7 +458,7 @@ export default function FasilitasPelabuhanForm() {
       </Section>
 
       <Section number={5} title="Jam Operasional">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Hari Kerja Pelabuhan" value={f.jam_kerja_pelabuhan?.hari} onChange={(v) => set('jam_kerja_pelabuhan.hari', v)} suffix="Hari Kerja" canEdit={canEdit} />
           <Field label="Jam Kerja Pelabuhan" value={f.jam_kerja_pelabuhan?.jam} onChange={(v) => set('jam_kerja_pelabuhan.jam', v)} suffix="Jam Kerja" canEdit={canEdit} />
           <Field label="Hari Kerja Kantor" value={f.jam_kerja_kantor?.hari} onChange={(v) => set('jam_kerja_kantor.hari', v)} suffix="Hari Kerja" canEdit={canEdit} />
@@ -475,7 +475,7 @@ export default function FasilitasPelabuhanForm() {
           <CardTitle className="text-sm mb-2">Gudang</CardTitle>
           <FacilityTable rows={GUDANG_ROWS} columns={GUDANG_COLS} data={f.gudang} canEdit={canEdit} onChange={(row, col, v) => set(`gudang.${row}.${col}`, v)} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Lapangan Penumpukan — Luas" value={f.lapangan_penumpukan?.luas} onChange={(v) => set('lapangan_penumpukan.luas', v)} canEdit={canEdit} />
           <Field label="Lapangan Penumpukan — Kapasitas" value={f.lapangan_penumpukan?.kapasitas} onChange={(v) => set('lapangan_penumpukan.kapasitas', v)} canEdit={canEdit} />
           <Field label="Terminal Penumpang — Luas" value={f.terminal_penumpang?.luas} onChange={(v) => set('terminal_penumpang.luas', v)} canEdit={canEdit} />
@@ -485,18 +485,18 @@ export default function FasilitasPelabuhanForm() {
           <label className="block text-xs text-slate-400 mb-1.5">Container Yard</label>
           <CheckboxGroup gridClass="grid-cols-2" flags={[{ key: 'container_yard', label: 'Ada', active: !!f.container_yard }]} canEdit={canEdit} onChange={(_, checked) => set('container_yard', checked)} />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Kapasitas Shore Crane" value={f.peralatan_bongkar_muat?.shoreCrane} onChange={(v) => set('peralatan_bongkar_muat.shoreCrane', v)} canEdit={canEdit} />
           <Field label="Kapasitas Forklift" value={f.peralatan_bongkar_muat?.forklift} onChange={(v) => set('peralatan_bongkar_muat.forklift', v)} canEdit={canEdit} />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field label="Jumlah TKBM" value={f.tenaga_kerja_bongkar_muat?.tkbm} onChange={(v) => set('tenaga_kerja_bongkar_muat.tkbm', v)} suffix="Orang" canEdit={canEdit} />
           <Field label="Jumlah Gang" value={f.tenaga_kerja_bongkar_muat?.gang} onChange={(v) => set('tenaga_kerja_bongkar_muat.gang', v)} suffix="Gang" canEdit={canEdit} />
           <Field label="Kemampuan Bongkar Muat" value={f.tenaga_kerja_bongkar_muat?.kemampuan} onChange={(v) => set('tenaga_kerja_bongkar_muat.kemampuan', v)} suffix="T/G/H" canEdit={canEdit} />
         </div>
         <div>
           <CardTitle className="text-sm mb-2">Fasilitas Pemanduan</CardTitle>
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <Field label="Pandu" value={f.fasilitas_pemanduan?.pandu} onChange={(v) => set('fasilitas_pemanduan.pandu', v)} suffix="Orang" canEdit={canEdit} />
             <Field label="Kapal Pandu Tunda" value={f.fasilitas_pemanduan?.kapalPanduTunda} onChange={(v) => set('fasilitas_pemanduan.kapalPanduTunda', v)} suffix="Unit" canEdit={canEdit} />
             <Field label="Kapal Kepil" value={f.fasilitas_pemanduan?.kapalKepil} onChange={(v) => set('fasilitas_pemanduan.kapalKepil', v)} suffix="Unit" canEdit={canEdit} />
@@ -512,7 +512,7 @@ export default function FasilitasPelabuhanForm() {
           <div className="space-y-3">
             <div>
               <p className="text-xs font-semibold text-slate-500 mb-2">Jasa Labuh</p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="Kapal Niaga (Rp)" value={f.tarif?.jasaLabuh?.kapalNiagaRp} onChange={(v) => set('tarif.jasaLabuh.kapalNiagaRp', v)} canEdit={canEdit} />
                 <Field label="Kapal Niaga (US$)" value={f.tarif?.jasaLabuh?.kapalNiagaUsd} onChange={(v) => set('tarif.jasaLabuh.kapalNiagaUsd', v)} canEdit={canEdit} />
                 <Field label="Kapal Bukan Niaga (Rp)" value={f.tarif?.jasaLabuh?.kapalBukanNiagaRp} onChange={(v) => set('tarif.jasaLabuh.kapalBukanNiagaRp', v)} canEdit={canEdit} />
@@ -520,7 +520,7 @@ export default function FasilitasPelabuhanForm() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 mb-2">Jasa Tambat</p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="Dermaga (Rp)" value={f.tarif?.jasaTambat?.dermagaRp} onChange={(v) => set('tarif.jasaTambat.dermagaRp', v)} canEdit={canEdit} />
                 <Field label="Dermaga (US$)" value={f.tarif?.jasaTambat?.dermagaUsd} onChange={(v) => set('tarif.jasaTambat.dermagaUsd', v)} canEdit={canEdit} />
                 <div />
@@ -533,7 +533,7 @@ export default function FasilitasPelabuhanForm() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 mb-2">Jasa Pemanduan</p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="Tarif Tetap (Rp)" value={f.tarif?.jasaPemanduan?.tarifTetapRp} onChange={(v) => set('tarif.jasaPemanduan.tarifTetapRp', v)} canEdit={canEdit} />
                 <Field label="Tarif Tetap (US$)" value={f.tarif?.jasaPemanduan?.tarifTetapUsd} onChange={(v) => set('tarif.jasaPemanduan.tarifTetapUsd', v)} canEdit={canEdit} />
                 <div />
@@ -543,7 +543,7 @@ export default function FasilitasPelabuhanForm() {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-500 mb-2">Jasa Air Kapal</p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="Dalam Negeri (Rp)" value={f.tarif?.jasaAirKapal?.dalamNegeriRp} onChange={(v) => set('tarif.jasaAirKapal.dalamNegeriRp', v)} canEdit={canEdit} />
                 <Field label="Luar Negeri (US$)" value={f.tarif?.jasaAirKapal?.luarNegeriUsd} onChange={(v) => set('tarif.jasaAirKapal.luarNegeriUsd', v)} canEdit={canEdit} />
               </div>
@@ -556,7 +556,7 @@ export default function FasilitasPelabuhanForm() {
         <div>
           <label className="block text-xs text-slate-400 mb-1.5">Fasilitas Lainnya</label>
           <CheckboxGroup
-            gridClass="grid-cols-3"
+            gridClass="grid-cols-1 sm:grid-cols-3"
             flags={FASILITAS_LAINNYA_OPTIONS.map((o) => ({ ...o, active: !!f.fasilitas_lainnya?.[o.key] }))}
             canEdit={canEdit}
             onChange={(key, checked) => set(`fasilitas_lainnya.${key}`, checked)}
